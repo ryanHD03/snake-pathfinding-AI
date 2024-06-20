@@ -14,8 +14,10 @@ This project implements the Snake game using Python and Pygame library. The Snak
    ```bash
    git clone https://github.com/your-username/snake-game.git
 2. Install dependencies:
+   '''bash
    pip install pygame
-3. Run the game:
+4. Run the game:
+   '''bash
    python main.py
 
 ## Usage
@@ -23,4 +25,5 @@ This project implements the Snake game using Python and Pygame library. The Snak
 
 ## Tests
   - To run unit tests:
+  - '''bash
     python -m unittest test_snake.py
