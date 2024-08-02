@@ -1,6 +1,6 @@
 import pygame
 from snake import Apple, Snake
-from pathfinding import BFS
+from pathfinding import set_path, is_position_safe
 from settings import *
 
 def drawGrid():
@@ -15,27 +15,43 @@ def handle_events():
             return False
     return True
 
-def update_snake_direction(snake, path):
-    ''' Extract moves from the path and update snake's direction '''
+def update(snake, apple):
+    apple.drawApple()
+    path = set_path(snake, apple)
     if path:
-        next_x, next_y = path[0], path[1]
-        if next_x > 0 and snake.pos != [-1, 0]:
-            snake.pos = [1, 0]
-        elif next_x < 0 and snake.pos != [1, 0]:
-            snake.pos = [-1, 0]
-        elif next_y > 0 and snake.pos != [0, 1]:
-            snake.pos = [0, 1]
-        elif next_y < 0 and snake.pos != [0, -1]:
-            snake.pos = [0, -1]
-            
-        # Remove the current move pair from the path
-        path = path[2:]
-    return path
+        snake.go_to(path[0])
+    snake.move()
 
+    pygame.draw.rect(SCREEN, SNAKE_CLR, snake.head)
 
+    for square in snake.body[1:]:
+        if snake.head.x == square.x and snake.head.y == square.y:
+            snake.dead = True
+        if snake.head.x <= -1 or snake.head.x >= WIDTH or snake.head.y <= -1 or snake.head.y >= HEIGHT:
+            snake.dead = True
+    if snake.dead:
+        #main()
+        pygame.time.wait(30000)
+
+    if len(snake.body) < 1:
+        # If snake's body is empty, add a new block after the head
+        new_block = pygame.Rect(snake.head.x, snake.head.y, BLOCK_SIZE, BLOCK_SIZE)
+        snake.body.append(new_block)
+    else:
+        # Draw and update all body segments
+        for square in snake.body:
+            pygame.draw.rect(SCREEN, SNAKE_CLR, square)
+
+    apple_pos = (apple.apple.x, apple.apple.y)
+    if snake.head.x == apple_pos[0] and snake.head.y == apple_pos[1]:
+        apple.spawn()  # Respawn apple
+        while not is_position_safe(snake.body, (apple.apple.x, apple.apple.y)):
+            apple.spawn()
+        # Add a new block after the current head position
+        snake.grow()
+        
 def main():
     pygame.init()
-    running = True
     clock = pygame.time.Clock()
     font = pygame.font.SysFont('timesnewroman', BLOCK_SIZE * 2)
     score = font.render("1", True, "white")
@@ -46,38 +62,16 @@ def main():
     snake = Snake()
     apple = Apple()
 
+    running = True
     while running:
         running = handle_events()
-
-        path = BFS(snake, apple, snake.pos)
-        path = update_snake_direction(snake, path)
-        
-        snake.drawSnake()
         SCREEN.fill(SURFACE_CLR)
         drawGrid()
-        apple.checkSpawn(snake.body)
-        apple.drawApple()
 
-        score = font.render(f"{len(snake.body)}", True, GRID_CLR)
-
-        pygame.draw.rect(SCREEN, SNAKE_CLR, snake.head)
-        for square in snake.body:
-            pygame.draw.rect(SCREEN, SNAKE_CLR, square)
-
-        SCREEN.blit(score, score_rect)
-
-        # Grow the snake
-        if len(snake.body) < 1:
-            if(snake.head.x == apple.x and snake.head.y == apple.y):
-                snake.body.append(pygame.Rect(snake.x, snake.y, BLOCK_SIZE, BLOCK_SIZE))    
-        else:
-            # Differentiates apple from the snake's body
-            if(snake.head.x == apple.x and snake.head.y == apple.y):
-                snake.body.append(pygame.Rect(square.x, square.y, BLOCK_SIZE, BLOCK_SIZE))
+        update(snake, apple)
                 
-
-        pygame.display.update()
         clock.tick(FPS)
+        pygame.display.update()
 
     pygame.quit()
 
